@@ -41,7 +41,7 @@ function App() {
   const [pageIndex, setPageIndex] = useState(0);
   const inputRef = useRef();
 
-  // 그리드 설정 (가장자리도 사용)
+  // 그리드 설정
   const ROWS_PER_PAGE = 5;
   const COLS_PER_PAGE = 15;
   const IMAGES_PER_PAGE = ROWS_PER_PAGE * COLS_PER_PAGE;
@@ -238,8 +238,6 @@ function App() {
 
   return (
       <div className="app">
-        <img src="/images/bg.jpeg" className="bg" alt="bg" />
-
         <h1>유안 갤러리</h1>
 
         <div className="upload-form">
