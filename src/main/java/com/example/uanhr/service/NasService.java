@@ -11,7 +11,6 @@ import java.io.IOException;
 public class NasService {
 
     private final OkHttpClient client = new OkHttpClient.Builder()
-            // 자체 서명 인증서 허용 (정식 SSL 적용 시 제거 가능)
             .hostnameVerifier((hostname, session) -> true)
             .build();
 
@@ -27,7 +26,6 @@ public class NasService {
     @Value("${nas.upload-path}")
     private String uploadPath;
 
-    /** 로그인 → sid 반환 */
     private String loginToNAS() throws IOException {
         HttpUrl url = HttpUrl.parse(nasUrl + "/auth.cgi").newBuilder()
                 .addQueryParameter("api", "SYNO.API.Auth")
@@ -45,18 +43,14 @@ public class NasService {
             if (body.contains("\"sid\"")) {
                 return body.split("\"sid\":\"")[1].split("\"")[0];
             }
-            throw new RuntimeException("Login failed: " + body);
+            throw new RuntimeException("NAS 로그인 실패: " + body);
         }
     }
 
-    /** 파일 업로드 */
     public String uploadFile(MultipartFile file) throws IOException {
         String sid = loginToNAS();
 
-        RequestBody fileBody = RequestBody.create(
-                file.getBytes(),
-                MediaType.parse("application/octet-stream")
-        );
+        RequestBody fileBody = RequestBody.create(file.getBytes(), MediaType.parse("application/octet-stream"));
 
         MultipartBody requestBody = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
@@ -76,7 +70,16 @@ public class NasService {
                 .build();
 
         try (Response response = client.newCall(request).execute()) {
-            return response.body().string();
+            String body = response.body().string();
+            if (response.isSuccessful()) {
+                return getFileUrl(file.getOriginalFilename());
+            } else {
+                throw new RuntimeException("NAS 업로드 실패: " + body);
+            }
         }
+    }
+
+    public String getFileUrl(String fileName) {
+        return "https://upload.inku.i234.me/web" + uploadPath + "/" + fileName;
     }
 }

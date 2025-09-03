@@ -3,6 +3,9 @@ package com.example.uanhr.controller;
 import com.example.uanhr.service.NasService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.ResponseEntity;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -15,12 +18,13 @@ public class UploadController {
     }
 
     @PostMapping("/upload")
-    public String uploadFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
         try {
-            return nasService.uploadFile(file);
+            String url = nasService.uploadFile(file);
+            return ResponseEntity.ok(Map.of("success", true, "url", url));
         } catch (Exception e) {
             e.printStackTrace();
-            return "{\"success\": false, \"error\": \"" + e.getMessage() + "\"}";
+            return ResponseEntity.status(500).body(Map.of("success", false, "error", e.getMessage()));
         }
     }
 }
