@@ -1,20 +1,20 @@
 package com.example.uanhr.service;
 
-import okhttp3.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
+import javax.net.ssl.*;
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.security.cert.X509Certificate;
 
 @Service
 public class NasService {
 
-    private final OkHttpClient client = new OkHttpClient.Builder()
-            .hostnameVerifier((hostname, session) -> true) // SSL 자체서명 인증서 무시
-            .build();
-
-    @Value("${nas.url}")         // 예: https://upload.inku.i234.me/webapi
+    @Value("${nas.url}")
     private String nasUrl;
 
     @Value("${nas.user}")
@@ -23,69 +23,107 @@ public class NasService {
     @Value("${nas.pass}")
     private String nasPass;
 
-    @Value("${nas.upload-path}") // 예: /docker/web/photos
-    private String uploadPath;
+    @Value("${nas.upload.path}")
+    private String nasPath;
 
-    private String loginToNAS() throws IOException {
-        HttpUrl url = HttpUrl.parse(nasUrl + "/auth.cgi").newBuilder()
-                .addQueryParameter("api", "SYNO.API.Auth")
-                .addQueryParameter("version", "6")
-                .addQueryParameter("method", "login")
-                .addQueryParameter("account", nasUser)
-                .addQueryParameter("passwd", nasPass)
-                .addQueryParameter("session", "FileStation")
-                .addQueryParameter("format", "cookie") // ✅ cookie 로 받아야 함
-                .build();
+    // 로그인 후 sid 발급
+    private String loginAndGetSid() throws Exception {
+        trustAllCertificates(); // HTTPS 인증서 무시
 
-        Request request = new Request.Builder().url(url).get().build();
-        try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                throw new RuntimeException("NAS 로그인 실패: " + response.body().string());
-            }
-            // ✅ sid 는 Set-Cookie 로 내려옴
-            String setCookie = response.header("Set-Cookie");
-            if (setCookie == null || !setCookie.contains("id=")) {
-                throw new RuntimeException("NAS 로그인 쿠키 획득 실패");
-            }
-            return setCookie.split(";", 2)[0]; // "id=xxxxx"
+        String loginUrl = nasUrl + "/webapi/auth.cgi"
+                + "?api=SYNO.API.Auth&version=6&method=login"
+                + "&account=" + URLEncoder.encode(nasUser, "UTF-8")
+                + "&passwd=" + URLEncoder.encode(nasPass, "UTF-8")
+                + "&session=FileStation&format=cookie";
+
+        HttpURLConnection conn = (HttpURLConnection) new URL(loginUrl).openConnection();
+        conn.setRequestMethod("GET");
+
+        BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+        StringBuilder sb = new StringBuilder();
+        String line;
+        while ((line = in.readLine()) != null) sb.append(line);
+        in.close();
+
+        String res = sb.toString();
+        if (!res.contains("\"success\":true")) {
+            throw new RuntimeException("로그인 실패: " + res);
         }
+
+        // sid 추출
+        int sidIndex = res.indexOf("\"sid\":\"") + 7;
+        int sidEnd = res.indexOf("\"", sidIndex);
+        return res.substring(sidIndex, sidEnd);
     }
 
-    public String uploadFile(MultipartFile file) throws IOException {
-        String cookie = loginToNAS();
+    public String uploadFile(MultipartFile file) throws Exception {
+        String sid = loginAndGetSid();
 
-        RequestBody fileBody = RequestBody.create(file.getBytes(), MediaType.parse("application/octet-stream"));
+        trustAllCertificates(); // HTTPS 인증서 무시
 
-        MultipartBody requestBody = new MultipartBody.Builder()
-                .setType(MultipartBody.FORM)
-                .addFormDataPart("path", uploadPath)
-                .addFormDataPart("create_parents", "true")
-                .addFormDataPart("overwrite", "true")
-                .addFormDataPart("file", file.getOriginalFilename(), fileBody)
-                .build();
+        String boundary = "----WebKitFormBoundary" + System.currentTimeMillis();
+        URL url = new URL(nasUrl + "/webapi/entry.cgi?api=SYNO.FileStation.Upload&version=2&method=upload");
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setDoOutput(true);
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Cookie", "id=" + sid);
+        conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
 
-        HttpUrl url = HttpUrl.parse(nasUrl + "/entry.cgi").newBuilder()
-                .addQueryParameter("api", "SYNO.FileStation.Upload")
-                .addQueryParameter("version", "2")
-                .addQueryParameter("method", "upload")
-                .build();
+        try (OutputStream out = conn.getOutputStream();
+             PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, "UTF-8"), true)) {
 
-        Request request = new Request.Builder()
-                .url(url)
-                .addHeader("Cookie", cookie) // ✅ 쿠키에 sid 전달
-                .post(requestBody)
-                .build();
+            // path
+            writer.append("--").append(boundary).append("\r\n");
+            writer.append("Content-Disposition: form-data; name=\"path\"\r\n\r\n");
+            writer.append(nasPath).append("\r\n");
 
-        try (Response response = client.newCall(request).execute()) {
-            String body = response.body().string();
-            if (!response.isSuccessful()) {
-                throw new RuntimeException("NAS 업로드 실패: " + body);
+            // create_parents
+            writer.append("--").append(boundary).append("\r\n");
+            writer.append("Content-Disposition: form-data; name=\"create_parents\"\r\n\r\n");
+            writer.append("true").append("\r\n");
+
+            // file
+            writer.append("--").append(boundary).append("\r\n");
+            writer.append("Content-Disposition: form-data; name=\"file\"; filename=\"")
+                    .append(file.getOriginalFilename()).append("\"\r\n");
+            writer.append("Content-Type: application/octet-stream\r\n\r\n");
+            writer.flush();
+
+            InputStream inputStream = file.getInputStream();
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
             }
-            return getFileUrl(file.getOriginalFilename());
+            out.flush();
+            inputStream.close();
+            writer.append("\r\n").flush();
+
+            writer.append("--").append(boundary).append("--").append("\r\n");
+            writer.flush();
         }
+
+        BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+        StringBuilder sb = new StringBuilder();
+        String line;
+        while ((line = in.readLine()) != null) sb.append(line);
+        in.close();
+
+        // 업로드된 파일 URL
+        String uploadedFileUrl = nasUrl + "/web" + nasPath + "/" + file.getOriginalFilename();
+        return uploadedFileUrl;
     }
 
-    public String getFileUrl(String fileName) {
-        return "https://upload.inku.i234.me/web" + uploadPath + "/" + fileName;
+    // HTTPS 인증서 무시
+    private void trustAllCertificates() throws Exception {
+        TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
+            public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+            public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+            public X509Certificate[] getAcceptedIssuers() { return null; }
+        }};
+        SSLContext sc = SSLContext.getInstance("SSL");
+        sc.init(null, trustAllCerts, new java.security.SecureRandom());
+        HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+        HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
     }
 }
