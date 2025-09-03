@@ -42,7 +42,7 @@ function App() {
   const inputRef = useRef();
 
   // 그리드 설정
-  const ROWS_PER_PAGE = 5;
+  const ROWS_PER_PAGE = 6;
   const COLS_PER_PAGE = 15;
   const IMAGES_PER_PAGE = ROWS_PER_PAGE * COLS_PER_PAGE;
   const totalPages = Math.ceil(images.length / IMAGES_PER_PAGE);
@@ -238,7 +238,7 @@ function App() {
 
   return (
       <div className="app">
-        <h1>유안 갤러리</h1>
+        <h1>갤러리</h1>
 
         <div className="upload-form">
           <input ref={inputRef} type="text" placeholder="이미지 URL 입력" />
@@ -281,7 +281,7 @@ function App() {
           })}
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: 10 }}>
+        <div style={{ textAlign: 'center', marginTop: 30 }}>
           <button onClick={prevPage} disabled={totalPages <= 1}>
             ◀ 이전
           </button>
