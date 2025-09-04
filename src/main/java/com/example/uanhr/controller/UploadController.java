@@ -1,27 +1,31 @@
 package com.example.uanhr.controller;
 
+import com.example.uanhr.entity.Photo;
 import com.example.uanhr.service.NasService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/nas")
+@RequiredArgsConstructor
 public class UploadController {
 
     private final NasService nasService;
 
-    @Autowired
-    public UploadController(NasService nasService) {
-        this.nasService = nasService;
-    }
-
     @PostMapping("/upload")
-    public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> uploadFile(
+            @RequestPart("file") MultipartFile file,
+            @RequestParam(required = false) Long albumId,
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) String tags,
+            @RequestParam(required = false) String location
+    ) {
         try {
-            String uploadedFileUrl = nasService.uploadFile(file);
-            return ResponseEntity.ok().body("✅ 업로드 성공: " + uploadedFileUrl);
+            Photo photo = nasService.uploadFileAndSave(file, title, description, tags, location, albumId);
+            return ResponseEntity.ok(photo);
         } catch (Exception e) {
             return ResponseEntity.status(500).body("❌ 업로드 실패: " + e.getMessage());
         }

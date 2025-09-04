@@ -3,10 +3,21 @@ import axios from "axios";
 
 function NasUpload() {
     const [file, setFile] = useState(null);
+    const [meta, setMeta] = useState({
+        albumId: "",
+        title: "",
+        description: "",
+        tags: "",
+        location: "",
+    });
     const [message, setMessage] = useState("");
 
     const handleFileChange = (e) => {
         setFile(e.target.files[0]);
+    };
+
+    const handleMetaChange = (e) => {
+        setMeta({ ...meta, [e.target.name]: e.target.value });
     };
 
     const handleUpload = async () => {
@@ -17,13 +28,18 @@ function NasUpload() {
 
         const formData = new FormData();
         formData.append("file", file);
+        formData.append("albumId", meta.albumId);
+        formData.append("title", meta.title);
+        formData.append("description", meta.description);
+        formData.append("tags", meta.tags);
+        formData.append("location", meta.location);
 
         try {
             setMessage("⏳ 업로드 중...");
             const res = await axios.post("http://localhost:8080/api/nas/upload", formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
-            setMessage(res.data); // 업로드된 파일 URL 포함 메시지
+            setMessage("✅ 업로드 성공: " + res.data.fileUrl);
         } catch (err) {
             console.error(err);
             setMessage("❌ 업로드 실패: " + (err.response?.data || err.message));
@@ -33,8 +49,49 @@ function NasUpload() {
     return (
         <div style={{ maxWidth: "400px", margin: "20px auto", textAlign: "center" }}>
             <h3>NAS 파일 업로드</h3>
-            <input type="file" onChange={handleFileChange} />
-            <br /><br />
+
+            <input type="file" onChange={handleFileChange} /> <br /><br />
+
+            <input
+                type="text"
+                name="albumId"
+                placeholder="앨범 ID"
+                value={meta.albumId}
+                onChange={handleMetaChange}
+            /><br /><br />
+
+            <input
+                type="text"
+                name="title"
+                placeholder="제목"
+                value={meta.title}
+                onChange={handleMetaChange}
+            /><br /><br />
+
+            <input
+                type="text"
+                name="description"
+                placeholder="설명"
+                value={meta.description}
+                onChange={handleMetaChange}
+            /><br /><br />
+
+            <input
+                type="text"
+                name="tags"
+                placeholder="태그 (쉼표 구분)"
+                value={meta.tags}
+                onChange={handleMetaChange}
+            /><br /><br />
+
+            <input
+                type="text"
+                name="location"
+                placeholder="위치"
+                value={meta.location}
+                onChange={handleMetaChange}
+            /><br /><br />
+
             <button onClick={handleUpload} style={{ padding: "6px 12px" }}>업로드</button>
             <p>{message}</p>
         </div>
