@@ -13,6 +13,7 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -31,7 +32,10 @@ public class NasService {
     private String nasPass;
 
     @Value("${nas.upload.path}")
-    private String nasPath;
+    private String nasUploadPath;
+
+    @Value("${nas.img.read.path}")
+    private String nasReadPath;
 
     private final PhotoRepository photoRepository;
 
@@ -41,8 +45,8 @@ public class NasService {
 
         String loginUrl = nasUrl + "/webapi/auth.cgi"
                 + "?api=SYNO.API.Auth&version=6&method=login"
-                + "&account=" + URLEncoder.encode(nasUser, "UTF-8")
-                + "&passwd=" + URLEncoder.encode(nasPass, "UTF-8")
+                + "&account=" + URLEncoder.encode(nasUser, StandardCharsets.UTF_8)
+                + "&passwd=" + URLEncoder.encode(nasPass, StandardCharsets.UTF_8)
                 + "&session=FileStation&format=cookie";
 
         HttpURLConnection conn = (HttpURLConnection) new URL(loginUrl).openConnection();
@@ -91,13 +95,13 @@ public class NasService {
         String randomFileName = UUID.randomUUID().toString().replace("-", "") + extension;
 
         try (OutputStream out = conn.getOutputStream();
-             PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, "UTF-8"), true);
+             PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8), true);
              InputStream inputStream = file.getInputStream()) {
 
             // path
             writer.append("--").append(boundary).append("\r\n");
             writer.append("Content-Disposition: form-data; name=\"path\"\r\n\r\n");
-            writer.append(nasPath).append("\r\n");
+            writer.append(nasUploadPath).append("\r\n");
 
             // create_parents
             writer.append("--").append(boundary).append("\r\n");
@@ -136,7 +140,7 @@ public class NasService {
         }
 
         // 업로드된 파일 URL
-        String uploadedFileUrl = nasUrl + "/web" + nasPath + "/" + randomFileName;
+        String uploadedFileUrl = nasReadPath + "/" + randomFileName;
 
         // DB 저장
         Photo photo = Photo.builder()
