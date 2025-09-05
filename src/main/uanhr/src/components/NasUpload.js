@@ -11,14 +11,10 @@ function NasUpload() {
         location: "",
     });
     const [message, setMessage] = useState("");
+    const [uploadedUrl, setUploadedUrl] = useState("");
 
-    const handleFileChange = (e) => {
-        setFile(e.target.files[0]);
-    };
-
-    const handleMetaChange = (e) => {
-        setMeta({ ...meta, [e.target.name]: e.target.value });
-    };
+    const handleFileChange = (e) => setFile(e.target.files[0]);
+    const handleMetaChange = (e) => setMeta({ ...meta, [e.target.name]: e.target.value });
 
     const handleUpload = async () => {
         if (!file) {
@@ -39,10 +35,13 @@ function NasUpload() {
             const res = await axios.post("http://localhost:8080/api/nas/upload", formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
-            setMessage("✅ 업로드 성공: " + res.data.fileUrl);
+
+            setMessage("✅ 업로드 성공");
+            setUploadedUrl(res.data.fileUrl); // DTO 반영
         } catch (err) {
             console.error(err);
             setMessage("❌ 업로드 실패: " + (err.response?.data || err.message));
+            setUploadedUrl("");
         }
     };
 
@@ -50,7 +49,7 @@ function NasUpload() {
         <div style={{ maxWidth: "400px", margin: "20px auto", textAlign: "center" }}>
             <h3>NAS 파일 업로드</h3>
 
-            <input type="file" onChange={handleFileChange} /> <br /><br />
+            <input type="file" onChange={handleFileChange} /><br /><br />
 
             <input
                 type="text"
@@ -93,7 +92,16 @@ function NasUpload() {
             /><br /><br />
 
             <button onClick={handleUpload} style={{ padding: "6px 12px" }}>업로드</button>
+
             <p>{message}</p>
+            {uploadedUrl && (
+                <div>
+                    <p>파일 URL:</p>
+                    <a href={uploadedUrl} target="_blank" rel="noopener noreferrer">{uploadedUrl}</a>
+                    <br />
+                    <img src={uploadedUrl} alt="uploaded" style={{ maxWidth: "100%", marginTop: "10px" }} />
+                </div>
+            )}
         </div>
     );
 }

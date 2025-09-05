@@ -1,5 +1,6 @@
 package com.example.uanhr.service;
 
+import com.example.uanhr.entity.Album;
 import com.example.uanhr.entity.Photo;
 import com.example.uanhr.repository.PhotoRepository;
 import lombok.RequiredArgsConstructor;
@@ -47,23 +48,29 @@ public class NasService {
         HttpURLConnection conn = (HttpURLConnection) new URL(loginUrl).openConnection();
         conn.setRequestMethod("GET");
 
-        BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-        StringBuilder sb = new StringBuilder();
-        String line;
-        while ((line = in.readLine()) != null) sb.append(line);
-        in.close();
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = in.readLine()) != null) sb.append(line);
 
-        String res = sb.toString();
-        if (!res.contains("\"success\":true")) {
-            throw new RuntimeException("로그인 실패: " + res);
+            String res = sb.toString();
+            if (!res.contains("\"success\":true")) {
+                throw new RuntimeException("로그인 실패: " + res);
+            }
+
+            int sidIndex = res.indexOf("\"sid\":\"") + 7;
+            int sidEnd = res.indexOf("\"", sidIndex);
+            return res.substring(sidIndex, sidEnd);
         }
-
-        int sidIndex = res.indexOf("\"sid\":\"") + 7;
-        int sidEnd = res.indexOf("\"", sidIndex);
-        return res.substring(sidIndex, sidEnd);
     }
 
-    public Photo uploadFileAndSave(MultipartFile file, String title, String description, String tags, String location, Long albumId) throws Exception {
+    public Photo uploadFileAndSave(MultipartFile file,
+                                   String title,
+                                   String description,
+                                   String tags,
+                                   String location,
+                                   Album album) throws Exception {
+
         String sid = loginAndGetSid();
         trustAllCertificates();
 
@@ -75,7 +82,7 @@ public class NasService {
         conn.setRequestProperty("Cookie", "id=" + sid);
         conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
 
-        // ✅ 랜덤 파일명
+        // 랜덤 파일명
         String originalName = file.getOriginalFilename();
         String extension = "";
         if (originalName != null && originalName.contains(".")) {
@@ -84,7 +91,8 @@ public class NasService {
         String randomFileName = UUID.randomUUID().toString().replace("-", "") + extension;
 
         try (OutputStream out = conn.getOutputStream();
-             PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, "UTF-8"), true)) {
+             PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, "UTF-8"), true);
+             InputStream inputStream = file.getInputStream()) {
 
             // path
             writer.append("--").append(boundary).append("\r\n");
@@ -108,32 +116,31 @@ public class NasService {
             writer.append("Content-Type: application/octet-stream\r\n\r\n");
             writer.flush();
 
-            InputStream inputStream = file.getInputStream();
             byte[] buffer = new byte[4096];
             int bytesRead;
             while ((bytesRead = inputStream.read(buffer)) != -1) {
                 out.write(buffer, 0, bytesRead);
             }
             out.flush();
-            inputStream.close();
             writer.append("\r\n").flush();
 
             writer.append("--").append(boundary).append("--").append("\r\n");
             writer.flush();
         }
 
-        BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-        StringBuilder sb = new StringBuilder();
-        String line;
-        while ((line = in.readLine()) != null) sb.append(line);
-        in.close();
+        // 업로드 확인 (간단히 response 읽기)
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = in.readLine()) != null) sb.append(line);
+        }
 
-        // 업로드된 파일의 NAS 접근 URL
+        // 업로드된 파일 URL
         String uploadedFileUrl = nasUrl + "/web" + nasPath + "/" + randomFileName;
 
-        // ✅ DB 저장
+        // DB 저장
         Photo photo = Photo.builder()
-                .albumId(albumId)
+                .album(album)
                 .title(title)
                 .description(description)
                 .tags(tags)
