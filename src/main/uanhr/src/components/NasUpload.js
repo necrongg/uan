@@ -32,7 +32,7 @@ function NasUpload() {
 
         try {
             setMessage("⏳ 업로드 중...");
-            const res = await axios.post("http://localhost:8080/api/nas/upload", formData, {
+            const res = await axios.post("https://web.inku.i234.me/api/nas/upload", formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
 

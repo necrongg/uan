@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/nas")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "https://web.inku.i234.me")
 public class UploadController {
 
     private final NasService nasService;
