@@ -197,7 +197,7 @@ public class NasService {
             int start = index + 8;
             int end = res.indexOf("\"", start);
             String fileName = res.substring(start, end);
-            files.add(nasReadPath + "/" + fileName);
+            files.add(nasUrl + "/web" + nasPath + "/" + fileName);
             index = end;
         }
         return files;
