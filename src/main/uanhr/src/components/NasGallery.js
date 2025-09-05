@@ -8,7 +8,9 @@ function NasGallery() {
     useEffect(() => {
         const fetchPhotos = async () => {
             try {
-                const res = await axios.get("https://web.inku.i234.me/api/nas/list");
+                // const res = await axios.get("https://web.inku.i234.me/api/nas/list");
+                // setPhotos(res.data);
+                const res = await axios.get("http://localhost:8080/api/nas/list");
                 setPhotos(res.data);
             } catch (err) {
                 console.error(err);
