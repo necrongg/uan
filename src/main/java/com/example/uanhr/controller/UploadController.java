@@ -4,7 +4,7 @@ import com.example.uanhr.dto.PhotoResponse;
 import com.example.uanhr.entity.Album;
 import com.example.uanhr.entity.Photo;
 import com.example.uanhr.service.AlbumService;
-import com.example.uanhr.service.NasUploadService;
+import com.example.uanhr.service.NasService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,7 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 @CrossOrigin(origins = "https://web.inku.i234.me")
 public class UploadController {
 
-    private final NasUploadService nasUploadService;
+    private final NasService nasService;
     private final AlbumService albumService;
 
     @PostMapping("/upload")
@@ -35,7 +35,7 @@ public class UploadController {
                         .orElseThrow(() -> new RuntimeException("앨범을 찾을 수 없습니다."));
             }
 
-            Photo photo = nasUploadService.uploadFileAndSave(file, title, description, tags, location, album);
+            Photo photo = nasService.uploadFileAndSave(file, title, description, tags, location, album);
 
             PhotoResponse response = PhotoResponse.builder()
                     .id(photo.getId())

@@ -16,11 +16,13 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class NasUploadService {
+public class NasService {
 
     @Value("${nas.url}")
     private String nasUrl;
@@ -32,7 +34,7 @@ public class NasUploadService {
     private String nasPass;
 
     @Value("${nas.upload.path}")
-    private String nasUploadPath;
+    private String nasPath;
 
     @Value("${nas.img.read.path}")
     private String nasReadPath;
@@ -67,7 +69,20 @@ public class NasUploadService {
             return res.substring(sidIndex, sidEnd);
         }
     }
+    // HTTPS 인증서 무시
+    private void trustAllCertificates() throws Exception {
+        TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
+            public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+            public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+            public X509Certificate[] getAcceptedIssuers() { return null; }
+        }};
+        SSLContext sc = SSLContext.getInstance("SSL");
+        sc.init(null, trustAllCerts, new java.security.SecureRandom());
+        HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+        HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
+    }
 
+    // 파일 업로드
     public Photo uploadFileAndSave(MultipartFile file,
                                    String title,
                                    String description,
@@ -101,7 +116,7 @@ public class NasUploadService {
             // path
             writer.append("--").append(boundary).append("\r\n");
             writer.append("Content-Disposition: form-data; name=\"path\"\r\n\r\n");
-            writer.append(nasUploadPath).append("\r\n");
+            writer.append(nasPath).append("\r\n");
 
             // create_parents
             writer.append("--").append(boundary).append("\r\n");
@@ -156,16 +171,35 @@ public class NasUploadService {
         return photoRepository.save(photo);
     }
 
-    // HTTPS 인증서 무시
-    private void trustAllCertificates() throws Exception {
-        TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
-            public void checkClientTrusted(X509Certificate[] certs, String authType) {}
-            public void checkServerTrusted(X509Certificate[] certs, String authType) {}
-            public X509Certificate[] getAcceptedIssuers() { return null; }
-        }};
-        SSLContext sc = SSLContext.getInstance("SSL");
-        sc.init(null, trustAllCerts, new java.security.SecureRandom());
-        HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-        HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
+    // NAS에 있는 폴더의 파일 리스트 가져오기
+    public List<String> listPhotos() throws Exception {
+        String sid = loginAndGetSid();
+        trustAllCertificates();
+
+        String urlStr = nasUrl + "/webapi/entry.cgi?api=SYNO.FileStation.List&version=2&method=list"
+                + "&folder_path=" + nasPath
+                + "&sort_by=name&sort_direction=asc&additional=file_size,real_path"
+                + "&_sid=" + sid;
+
+        HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
+        conn.setRequestMethod("GET");
+
+        BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+        StringBuilder sb = new StringBuilder(); String line;
+        while ((line = in.readLine()) != null) sb.append(line);
+        in.close();
+
+        String res = sb.toString();
+        // 간단히 파일명만 추출 (정규식 혹은 JSON 파싱 가능)
+        List<String> files = new ArrayList<>();
+        int index = 0;
+        while ((index = res.indexOf("\"name\":\"", index)) != -1) {
+            int start = index + 8;
+            int end = res.indexOf("\"", start);
+            String fileName = res.substring(start, end);
+            files.add(nasUrl + "/web" + nasPath + "/" + fileName);
+            index = end;
+        }
+        return files;
     }
 }
