@@ -24,7 +24,7 @@ function NasUpload() {
 
         const formData = new FormData();
         formData.append("file", file);
-        formData.append("albumId", meta.albumId);
+        formData.append("album", meta.albumId);
         formData.append("title", meta.title);
         formData.append("description", meta.description);
         formData.append("tags", meta.tags);
