@@ -1,7 +1,10 @@
 package com.example.uanhr.controller;
 
-import com.example.uanhr.service.NasService;
+import com.example.uanhr.dto.PhotoResponse;
+import com.example.uanhr.entity.Photo;
+import com.example.uanhr.repository.PhotoRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,17 +13,26 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/nas")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class PhotoListController {
 
-    private final NasService nasService;
+    private final PhotoRepository photoRepository;
 
     @GetMapping("/list")
-    public ResponseEntity<?> getPhotoList() {
-        try {
-            List<String> photos = nasService.listPhotos();
-            return ResponseEntity.ok(photos);
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("❌ NAS 목록 조회 실패: " + e.getMessage());
-        }
+    public ResponseEntity<List<PhotoResponse>> listPhotos() {
+        List<Photo> photos = photoRepository.findAll(Sort.by(Sort.Direction.DESC, "uploadedDate")); // 최신순
+        List<PhotoResponse> res = photos.stream()
+                .map(p -> PhotoResponse.builder()
+                        .id(p.getId())
+                        .title(p.getTitle())
+                        .description(p.getDescription()) // 이제 정상 작동
+                        .fileUrl(p.getFileUrl())
+                        .uploadedDate(p.getUploadedDate())
+                        .tags(p.getTags())
+                        .location(p.getLocation())
+                        .build())
+                .toList();
+        return ResponseEntity.ok(res);
     }
+
 }

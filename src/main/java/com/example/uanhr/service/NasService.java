@@ -178,7 +178,8 @@ public class NasService {
 
         String urlStr = nasUrl + "/webapi/entry.cgi?api=SYNO.FileStation.List&version=2&method=list"
                 + "&folder_path=" + nasPath
-                + "&sort_by=name&sort_direction=asc&additional=file_size,real_path"
+                + "&additional=upload_time,file_size,real_path" //업로드날짜 기준 내림차순 정렬
+                + "&sort_by=additional&sort_direction=desc"
                 + "&_sid=" + sid;
 
         HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();

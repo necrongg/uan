@@ -1,0 +1,69 @@
+/* Masonry Grid */
+.masonry {
+    column-count: 3;
+    column-gap: 10px;
+}
+.masonry-item {
+    break-inside: avoid;
+    margin-bottom: 10px;
+    cursor: pointer;
+    overflow: hidden;
+    border-radius: 8px;
+}
+.masonry-item img {
+    width: 100%;
+    display: block;
+    transition: transform 0.3s;
+}
+.masonry-item:hover img {
+    transform: scale(1.05);
+}
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+.modal-content {
+    background: #fff;
+    width: 80%;
+    height: 80%;
+    display: flex;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+}
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+.modal-left {
+    width: 70%;
+    height: 100%;
+}
+.modal-left img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+}
+.modal-right {
+    width: 30%;
+    padding: 20px;
+    overflow-y: auto;
+    background: #f9f9f9;
+}
+.modal-right h2 {
+    margin-top: 0;
+}
