@@ -20,7 +20,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class NasService {
+public class NasUploadService {
 
     @Value("${nas.url}")
     private String nasUrl;
