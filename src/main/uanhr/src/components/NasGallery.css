@@ -4,11 +4,12 @@
     column-gap: 10px;
 }
 .masonry-item {
+    position: relative;
     break-inside: avoid;
     margin-bottom: 10px;
     cursor: pointer;
-    overflow: hidden;
     border-radius: 8px;
+    overflow: hidden;
 }
 .masonry-item img {
     width: 100%;
@@ -19,12 +20,41 @@
     transform: scale(1.05);
 }
 
+/* Hover Overlay - 슬라이드 업 */
+.photo-overlay {
+    position: absolute;
+    bottom: -100%;
+    width: 100%;
+    height: 20%;
+    background-color: rgba(255, 255, 255, 0.8);
+    transition: bottom 0.3s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+}
+.masonry-item:hover .photo-overlay {
+    bottom: 0;
+}
+.overlay-text {
+    text-align: center;
+    font-size: 14px;
+}
+.overlay-title {
+    font-weight: bold;
+    margin: 0;
+}
+.overlay-date,
+.overlay-likes {
+    margin: 0;
+}
+
 /* Modal */
 .modal-overlay {
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background: rgba(0,0,0,0.7);
+    background: rgba(0,0,0,0.8);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -35,9 +65,10 @@
     width: 80%;
     height: 80%;
     display: flex;
-    border-radius: 8px;
+    border-radius: 10px;
     overflow: hidden;
     position: relative;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 .close-btn {
     position: absolute;
@@ -51,19 +82,68 @@
 .modal-left {
     width: 70%;
     height: 100%;
+    background-color: #000;
 }
 .modal-left img {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    background: #000;
 }
 .modal-right {
     width: 30%;
     padding: 20px;
     overflow-y: auto;
-    background: #f9f9f9;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
 }
 .modal-right h2 {
     margin-top: 0;
+}
+
+/* 좋아요 버튼 + 애니메이션 */
+.like-section {
+    display: flex;
+    align-items: center;
+    margin-top: 20px;
+    position: relative;
+}
+.like-btn {
+    cursor: pointer;
+    border: none;
+    background: #ff3b30;
+    color: #fff;
+    padding: 5px 12px;
+    border-radius: 5px;
+    margin-right: 10px;
+    position: relative;
+    overflow: hidden;
+}
+.like-btn.liked .like-heart {
+    animation: heart-pop 0.5s forwards;
+}
+.like-heart {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    font-size: 24px;
+    color: #ff3b30;
+    pointer-events: none;
+}
+@keyframes heart-pop {
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+    50% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+.like-count {
+    font-weight: bold;
+}
+.comment-section {
+    margin-top: 20px;
+    font-size: 14px;
+    color: #555;
+    border-top: 1px solid #ddd;
+    padding-top: 10px;
 }

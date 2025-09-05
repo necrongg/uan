@@ -50,7 +50,7 @@ function NasUpload() {
 
     return (
         <div style={{ maxWidth: "400px", margin: "20px auto", textAlign: "center" }}>
-            <h3>NAS 파일 업로드</h3>
+            <h3>사진 올리기</h3>
 
             <input type="file" multiple onChange={handleFileChange} /><br /><br />
 
