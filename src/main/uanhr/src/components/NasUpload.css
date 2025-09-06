@@ -1,0 +1,171 @@
+/* 모달 배경 */
+.nas-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+}
+
+/* 모달 박스 */
+.nas-modal {
+    background: white;
+    width: 900px;
+    height: 600px;
+    border-radius: 16px;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* 왼쪽 슬라이드 영역 */
+.nas-upload-area {
+    flex: 1;
+    background: #b5b1b1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.2s, border 0.2s;
+}
+
+.nas-upload-area.dragging {
+    background: #e0f2fe;
+    border: 4px dashed #38bdf8;
+}
+
+.nas-file-label {
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    text-align: center;
+}
+
+/* 슬라이드 wrapper */
+.nas-slide-wrapper {
+    display: flex;
+    transition: transform 0.4s ease-in-out;
+    height: 100%;
+    width: 100%; /* JS에서 width를 files.length * 100%로 설정 */
+}
+
+.nas-preview-image {
+    width: 100%;  /* 컨테이너 폭 100% */
+    height: 100%;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+
+/* 좌우 버튼 */
+.nas-arrow {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.8);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nas-arrow.left {
+    left: 10px;
+}
+
+.nas-arrow.right {
+    right: 10px;
+}
+
+/* 점 표시 */
+.nas-dots {
+    position: absolute;
+    bottom: 10px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    background: gray;
+    border-radius: 50%;
+}
+
+.dot.active {
+    background: white;
+}
+
+/* 오른쪽 폼 영역 */
+.nas-form {
+    width: 40%;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+}
+
+.nas-form h2 {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 12px;
+}
+
+.nas-form input,
+.nas-form textarea,
+.nas-form select {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.nas-form textarea {
+    resize: none;
+    height: 60px;
+}
+
+.nas-upload-btn {
+    margin-top: auto;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.nas-upload-btn:hover {
+    background: #2563eb;
+}
+
+.nas-message {
+    font-size: 12px;
+    color: gray;
+    margin-top: 8px;
+}
+
+/* 닫기 버튼 */
+.nas-close-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    border: none;
+    background: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #444;
+}

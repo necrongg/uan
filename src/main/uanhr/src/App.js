@@ -1,16 +1,24 @@
-import React from "react";
-
+import React, { useState } from "react";
 import NasUpload from "./components/NasUpload";
-import Test_NasGallery from "./components/test_NasGallery";
 import NasGallery from "./components/NasGallery";
 
 function App() {
+    const [isUploadOpen, setIsUploadOpen] = useState(false);
+
     return (
         <div>
-            <div>유안앨범</div>
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 20px" }}>
+                <h2>유안앨범</h2>
+                <button onClick={() => setIsUploadOpen(true)} style={{ padding: "6px 12px", cursor: "pointer" }}>
+                    사진 올리기
+                </button>
+            </div>
 
-            <NasUpload />
-            <NasGallery/>
+            {/* 업로드 모달 */}
+            {isUploadOpen && <NasUpload onClose={() => setIsUploadOpen(false)} />}
+
+            {/* 갤러리 */}
+            <NasGallery />
         </div>
     );
 }
