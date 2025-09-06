@@ -29,6 +29,7 @@ function NasUpload({onClose}) {
     const [albums, setAlbums] = useState([]);
     const [activeId, setActiveId] = useState(null);
     const [progress, setProgress] = useState(0); // 0~100%
+    const [uploadedCount, setUploadedCount] = useState(0); // 업로드된 개수 상태 추가
     const [meta, setMeta] = useState({
         albumId: "",
         title: "",
@@ -48,7 +49,7 @@ function NasUpload({onClose}) {
     useEffect(() => {
         const fetchAlbums = async () => {
             try {
-                const res = await axios.get("http://localhost:8080/api/albums");
+                const res = await axios.get("https://web.inku.i234.me/api/albums");
                 const albumList = Array.isArray(res.data) ? res.data : [];
                 setAlbums(albumList);
                 if (albumList.length > 0)
@@ -138,34 +139,36 @@ function NasUpload({onClose}) {
         try {
             setMessage("⏳ 업로드 중...");
             setProgress(0);
+            setUploadedCount(0); // 초기화
 
-            let uploadedCount = 0;
+            let count = 0;
 
             for (let i = 0; i < files.length; i++) {
                 const formData = new FormData();
                 formData.append("files", files[i]);
                 Object.keys(meta).forEach((key) => formData.append(key, meta[key]));
 
-                await axios.post("http://localhost:8080/api/nas/upload-multi", formData, {
+                await axios.post("https://web.inku.i234.me/api/nas/upload-multi", formData, {
                     headers: {"Content-Type": "multipart/form-data"},
                     onUploadProgress: (event) => {
                         const fileProgress = Math.round((event.loaded / event.total) * 100);
                         const overallProgress = Math.round(
-                            ((uploadedCount + fileProgress / 100) / files.length) * 100
+                            ((count + fileProgress / 100) / files.length) * 100
                         );
                         setProgress(overallProgress);
                     },
                 });
 
-                uploadedCount++;
+                count++;
+                setUploadedCount(count); // ✅ 업로드된 개수 업데이트
             }
 
             setProgress(100);
             setMessage("✅ 업로드 성공");
 
-            // 업로드 완료 후 모달 자동 닫기 (0.5초 딜레이)
+            // 업로드 완료 후 페이지 새로고침 (0.5초 딜레이)
             setTimeout(() => {
-                onClose();
+                window.location.reload();
             }, 500);
         } catch (err) {
             console.error(err);
@@ -319,10 +322,11 @@ function NasUpload({onClose}) {
                         onChange={(e) => setMeta({...meta, location: e.target.value})}
                     />
                     <p className="nas-message">{message}</p>
-                        <div className="nas-progress">
-                            <div className="nas-progress-bar" style={{width: `${progress}%`}}/>
-                            <span>{progress}%</span>
-                        </div>
+                    <div className="nas-progress">
+                        <div className="nas-progress-bar" style={{width: `${progress}%`}}/>
+                        <span>({uploadedCount}/{files.length}) {progress}%</span> {/* ✅ 수량 표시 */}
+                    </div>
+
                     <button onClick={handleUpload} className="nas-upload-btn">
                         업로드
                     </button>
