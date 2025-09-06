@@ -25,17 +25,21 @@
 .nas-upload-area {
     flex: 1;
     background: #b5b1b1;
+    margin: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
     overflow: hidden;
     transition: background 0.2s, border 0.2s;
+    border: 4px dashed #f4f4f4; /* 파란색 점선 */
 }
 
+/* 드래그 중 점선 강조 */
 .nas-upload-area.dragging {
-    background: #e0f2fe;
-    border: 4px dashed #38bdf8;
+    background: #e0f2fe;       /* 연한 하늘색 배경 */
+    border: 4px dashed #38bdf8; /* 파란색 점선 */
+    transition: background 0.2s, border 0.2s;
 }
 
 .nas-file-label {

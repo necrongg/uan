@@ -20,7 +20,11 @@ import "./NasUpload.css";
 
 function NasUpload({ onClose }) {
     const [files, setFiles] = useState([]);
+    const [isDragging, setIsDragging] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [message, setMessage] = useState("");
+    const [albums, setAlbums] = useState([]);
+    const [activeId, setActiveId] = useState(null);
     const [meta, setMeta] = useState({
         albumId: "",
         title: "",
@@ -28,9 +32,6 @@ function NasUpload({ onClose }) {
         tags: "",
         location: "",
     });
-    const [message, setMessage] = useState("");
-    const [albums, setAlbums] = useState([]);
-    const [activeId, setActiveId] = useState(null);
 
     // 드래그 센서 (1초 이상 눌러야 드래그 시작)
     const sensors = useSensors(
@@ -126,8 +127,26 @@ function NasUpload({ onClose }) {
         <div className="nas-modal-overlay">
             <div className="nas-modal">
                 {/* 왼쪽 슬라이드 */}
-                <div className="nas-upload-area">
-                    {files.length > 0 ? (
+                <div
+                    className={`nas-upload-area ${isDragging ? "dragging" : ""}`}
+                    onDrop={(e) => {
+                        e.preventDefault();
+                        setIsDragging(false);
+                        const droppedFiles = Array.from(e.dataTransfer.files);
+                        setFiles(droppedFiles);
+                        setCurrentIndex(0);
+                    }}
+                    onDragOver={(e) => {
+                        e.preventDefault();
+                        setIsDragging(true);
+                    }}
+                    onDragLeave={(e) => {
+                        e.preventDefault();
+                        setIsDragging(false);
+                    }}
+                >
+
+                {files.length > 0 ? (
                         <>
                             <div
                                 className="nas-slide-wrapper"
