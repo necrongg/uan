@@ -68,47 +68,51 @@ function NasUpload({ onClose }) {
         const processedFiles = [];
         const processedPreviews = [];
 
-        for (let i = 0; i < selectedFiles.length; i++) {
-            const file = selectedFiles[i];
-            processedFiles.push(file);
+        // 병렬 처리
+        await Promise.all(
+            selectedFiles.map(async (file, index) => {
+                processedFiles.push(file); // 원본 저장
 
-            // HEIC → JPEG 변환
-            let previewURL = "";
-            if (file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
-                try {
-                    const convertedBlob = await heic2any({ blob: file, toType: "image/jpeg" });
-                    previewURL = URL.createObjectURL(convertedBlob);
-                } catch (err) {
-                    console.error("HEIC 변환 실패", err);
-                    previewURL = "";
+                // HEIC 변환
+                let previewURL;
+                if (file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
+                    try {
+                        const convertedBlob = await heic2any({ blob: file, toType: "image/jpeg" });
+                        previewURL = URL.createObjectURL(convertedBlob);
+                    } catch (err) {
+                        console.error("HEIC 변환 실패", err);
+                        previewURL = ""; // 변환 실패 시 빈값
+                    }
+                } else {
+                    previewURL = URL.createObjectURL(file);
                 }
-            } else {
-                previewURL = URL.createObjectURL(file);
-            }
+                processedPreviews.push(previewURL);
 
-            processedPreviews.push(previewURL);
+                // EXIF 추출 (첫 번째 파일만 메타 업데이트)
+                if (index === 0) {
+                    try {
+                        const exifData = await exifr.parse(file, { gps: true });
+                        const takenDate = exifData?.DateTimeOriginal
+                            ? new Date(exifData.DateTimeOriginal).toISOString().slice(0, 16)
+                            : new Date(file.lastModified).toISOString().slice(0, 16);
 
-            // EXIF 추출 (HEIC/이미지)
-            try {
-                const exifData = await exifr.parse(file, { gps: true });
-                const takenDate = exifData?.DateTimeOriginal
-                    ? new Date(exifData.DateTimeOriginal).toISOString().slice(0, 16)
-                    : new Date(file.lastModified).toISOString().slice(0, 16);
+                        let location = "";
+                        if (exifData?.latitude && exifData?.longitude) {
+                            location = `${exifData.latitude},${exifData.longitude}`;
+                        }
 
-                let location = "";
-                if (exifData?.latitude && exifData?.longitude) {
-                    location = `${exifData.latitude},${exifData.longitude}`;
+                        setMeta((prev) => ({ ...prev, takenDate, location }));
+                    } catch (err) {
+                        console.warn("EXIF 읽기 실패:", err);
+                    }
                 }
-
-                if (i === 0) setMeta((prev) => ({ ...prev, takenDate, location }));
-            } catch (err) {
-                console.warn("EXIF 읽기 실패:", err);
-            }
-        }
+            })
+        );
 
         setFiles(processedFiles);
         setPreviews(processedPreviews);
     };
+
 
     const handleFileChange = (e) => handleFiles(Array.from(e.target.files));
 
@@ -300,7 +304,7 @@ function NasUpload({ onClose }) {
     );
 }
 
-function SortableThumbnail({ id, file, preview, isActive, onClick, onDelete }) {
+function SortableThumbnail({ id, preview, isActive, onClick, onDelete }) {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
     const style = {
         transform: CSS.Transform.toString(transform),
