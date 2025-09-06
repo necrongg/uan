@@ -85,6 +85,7 @@ public class NasService {
     // 파일 업로드
     public Photo uploadFileAndSave(MultipartFile file,
                                    String title,
+                                   LocalDateTime takenDate,
                                    String description,
                                    String tags,
                                    String location,
@@ -162,6 +163,7 @@ public class NasService {
                 .album(album)
                 .title(title)
                 .description(description)
+                .takenDate(takenDate)
                 .tags(tags)
                 .location(location)
                 .fileUrl(uploadedFileUrl)

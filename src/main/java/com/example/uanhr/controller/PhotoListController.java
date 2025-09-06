@@ -25,7 +25,8 @@ public class PhotoListController {
                 .map(p -> PhotoResponse.builder()
                         .id(p.getId())
                         .title(p.getTitle())
-                        .description(p.getDescription()) // 이제 정상 작동
+                        .description(p.getDescription())
+                        .takenDate(p.getTakenDate())
                         .fileUrl(p.getFileUrl())
                         .uploadedDate(p.getUploadedDate())
                         .tags(p.getTags())

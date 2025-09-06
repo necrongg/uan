@@ -2,10 +2,10 @@ import React, { useState } from "react";
 import "./NasGallery.css";
 
 const samplePhotos = [
-    { id: 1, fileUrl: "https://picsum.photos/id/1015/600/400", title: "사진 1", description: "샘플 이미지 1", uploadedDate: "2025-09-05", tags: "tag1", location: "서울" },
-    { id: 2, fileUrl: "https://picsum.photos/id/1016/600/400", title: "사진 2", description: "샘플 이미지 2", uploadedDate: "2025-09-04", tags: "tag2", location: "부산" },
-    { id: 3, fileUrl: "https://picsum.photos/id/1018/600/400", title: "사진 3", description: "샘플 이미지 3", uploadedDate: "2025-09-03", tags: "tag3", location: "대구" },
-    { id: 4, fileUrl: "https://picsum.photos/id/1020/600/400", title: "사진 4", description: "샘플 이미지 4", uploadedDate: "2025-09-02", tags: "tag4", location: "인천" },
+    { id: 1, fileUrl: "https://picsum.photos/id/1015/600/400", title: "사진 1", description: "샘플 이미지 1", takenDate: "2025-09-05", tags: "tag1", location: "서울" },
+    { id: 2, fileUrl: "https://picsum.photos/id/1016/600/400", title: "사진 2", description: "샘플 이미지 2", takenDate: "2025-09-04", tags: "tag2", location: "부산" },
+    { id: 3, fileUrl: "https://picsum.photos/id/1018/600/400", title: "사진 3", description: "샘플 이미지 3", takenDate: "2025-09-03", tags: "tag3", location: "대구" },
+    { id: 4, fileUrl: "https://picsum.photos/id/1020/600/400", title: "사진 4", description: "샘플 이미지 4", takenDate: "2025-09-02", tags: "tag4", location: "인천" },
     { id: 5, fileUrl: "https://picsum.photos/id/1024/600/400", title: "사진 5", description: "샘플 이미지 5", uploadedDate: "2025-09-01", tags: "tag5", location: "광주" },
     { id: 6, fileUrl: "https://picsum.photos/id/1025/600/400", title: "사진 6", description: "샘플 이미지 6", uploadedDate: "2025-08-31", tags: "tag6", location: "대전" },
     { id: 7, fileUrl: "https://picsum.photos/id/1027/600/400", title: "사진 7", description: "샘플 이미지 7", uploadedDate: "2025-08-30", tags: "tag7", location: "울산" },
@@ -72,15 +72,15 @@ function NasGallery() {
                         <div className="modal-right">
                             <h2>{selected.title}</h2>
                             <p>{selected.description}</p>
-                            <p><strong>업로드:</strong> {selected.uploadedDate}</p>
                             <p><strong>태그:</strong> {selected.tags}</p>
                             <p><strong>위치:</strong> {selected.location}</p>
+                            <p><strong>업로드:</strong> {selected.uploadedDate}</p>
 
                             <div className="like-section">
                                 <button
                                     className={`like-btn ${likedPhotos[selected.idx] ? "liked" : ""}`}
                                     onClick={() => handleLike(selected.idx)}>
-                                    ❤️ 좋아요
+                                    ❤️ 좋아요(준비중)
                                     <span className="like-heart"></span>
                                 </button>
                                 <p className="like-count">{likes[selected.idx]}</p>
@@ -89,6 +89,9 @@ function NasGallery() {
                             <div className="comment-section">
                                 <p>댓글 영역 (준비중)</p>
                             </div>
+
+                            <p>촬영일:{selected.takenDate}</p>
+
                         </div>
                     </div>
                 </div>

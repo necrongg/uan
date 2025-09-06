@@ -12,6 +12,7 @@ public class PhotoResponse {
     private String title;
     private String description;
     private String fileUrl;
+    private LocalDateTime takenDate;
     private LocalDateTime uploadedDate;
     private String tags;
     private String location;

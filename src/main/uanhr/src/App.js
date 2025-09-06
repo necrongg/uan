@@ -13,7 +13,7 @@ function App() {
     return (
         <div>
             <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 20px" }}>
-                <h2>유안앨범</h2>
+                <h2>갤러리</h2>
                 <div>
                     <Upload disabled>
                         <Button icon={<UploadOutlined />} onClick={() => setIsUploadOpen(true)}>사진 올리기</Button>

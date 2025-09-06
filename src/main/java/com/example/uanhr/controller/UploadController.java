@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,6 +29,7 @@ public class UploadController {
             @RequestParam(required = false) Long albumId,
             @RequestParam(required = false) String title,
             @RequestParam(required = false) String description,
+            @RequestParam(required = false) LocalDateTime takenDate,
             @RequestParam(required = false) String tags,
             @RequestParam(required = false) String location
     ) {
@@ -40,11 +42,12 @@ public class UploadController {
 
             List<PhotoResponse> responses = new ArrayList<>();
             for (MultipartFile file : files) {
-                Photo photo = nasService.uploadFileAndSave(file, title, description, tags, location, album);
+                Photo photo = nasService.uploadFileAndSave(file, title,takenDate, description, tags, location, album);
                 responses.add(PhotoResponse.builder()
                         .id(photo.getId())
                         .title(photo.getTitle())
                         .fileUrl(photo.getFileUrl())
+                        .takenDate(photo.getTakenDate())
                         .uploadedDate(photo.getUploadedDate())
                         .build());
             }
