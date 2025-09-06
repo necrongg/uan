@@ -289,6 +289,7 @@ function NasUpload({onClose}) {
                         ))}
                     </select>
                     <input
+                        required
                         type="text"
                         placeholder="제목"
                         value={meta.title}
