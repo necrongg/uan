@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, {useState, useEffect} from "react";
 import axios from "axios";
-import { LeftOutlined, RightOutlined, CloseOutlined } from "@ant-design/icons";
+import {LeftOutlined, RightOutlined, CloseOutlined} from "@ant-design/icons";
 import {
     DndContext,
     closestCenter,
@@ -15,12 +15,12 @@ import {
     useSortable,
     horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import {CSS} from "@dnd-kit/utilities";
 import exifr from "exifr";
 import heic2any from "heic2any";
 import "./NasUpload.css";
 
-function NasUpload({ onClose }) {
+function NasUpload({onClose}) {
     const [files, setFiles] = useState([]);
     const [previews, setPreviews] = useState([]); // 미리보기 Blob URL
     const [isDragging, setIsDragging] = useState(false);
@@ -28,6 +28,7 @@ function NasUpload({ onClose }) {
     const [message, setMessage] = useState("");
     const [albums, setAlbums] = useState([]);
     const [activeId, setActiveId] = useState(null);
+    const [progress, setProgress] = useState(0); // 0~100%
     const [meta, setMeta] = useState({
         albumId: "",
         title: "",
@@ -39,7 +40,7 @@ function NasUpload({ onClose }) {
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
-            activationConstraint: { delay: 200, tolerance: 5 },
+            activationConstraint: {delay: 200, tolerance: 5},
         })
     );
 
@@ -47,11 +48,11 @@ function NasUpload({ onClose }) {
     useEffect(() => {
         const fetchAlbums = async () => {
             try {
-                const res = await axios.get("https://web.inku.i234.me/api/albums");
+                const res = await axios.get("http://localhost:8080/api/albums");
                 const albumList = Array.isArray(res.data) ? res.data : [];
                 setAlbums(albumList);
                 if (albumList.length > 0)
-                    setMeta((prev) => ({ ...prev, albumId: String(albumList[0].id) }));
+                    setMeta((prev) => ({...prev, albumId: String(albumList[0].id)}));
             } catch (err) {
                 console.error("앨범 가져오기 실패:", err);
             }
@@ -77,7 +78,7 @@ function NasUpload({ onClose }) {
                 let previewURL;
                 if (file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
                     try {
-                        const convertedBlob = await heic2any({ blob: file, toType: "image/jpeg" });
+                        const convertedBlob = await heic2any({blob: file, toType: "image/jpeg"});
                         previewURL = URL.createObjectURL(convertedBlob);
                     } catch (err) {
                         console.error("HEIC 변환 실패", err);
@@ -91,7 +92,7 @@ function NasUpload({ onClose }) {
                 // EXIF 추출 (첫 번째 파일만 메타 업데이트)
                 if (index === 0) {
                     try {
-                        const exifData = await exifr.parse(file, { gps: true });
+                        const exifData = await exifr.parse(file, {gps: true});
                         const takenDate = exifData?.DateTimeOriginal
                             ? new Date(exifData.DateTimeOriginal).toISOString().slice(0, 16)
                             : new Date(file.lastModified).toISOString().slice(0, 16);
@@ -101,7 +102,7 @@ function NasUpload({ onClose }) {
                             location = `${exifData.latitude},${exifData.longitude}`;
                         }
 
-                        setMeta((prev) => ({ ...prev, takenDate, location }));
+                        setMeta((prev) => ({...prev, takenDate, location}));
                     } catch (err) {
                         console.warn("EXIF 읽기 실패:", err);
                     }
@@ -127,19 +128,36 @@ function NasUpload({ onClose }) {
         else if (index < currentIndex) setCurrentIndex((prev) => prev - 1);
     };
 
+    // 상태 추가
     const handleUpload = async () => {
         if (files.length === 0) return setMessage("❌ 파일을 선택해주세요.");
         if (!meta.albumId) return setMessage("❌ 앨범을 선택해주세요.");
 
-        const formData = new FormData();
-        files.forEach((f) => formData.append("files", f));
-        Object.keys(meta).forEach((key) => formData.append(key, meta[key]));
-
         try {
             setMessage("⏳ 업로드 중...");
-            await axios.post("https://web.inku.i234.me/api/nas/upload-multi", formData, {
-                headers: { "Content-Type": "multipart/form-data" },
-            });
+            setProgress(0);
+
+            let uploadedCount = 0;
+
+            // 순차 업로드
+            for (let i = 0; i < files.length; i++) {
+                const formData = new FormData();
+                formData.append("files", files[i]);
+                Object.keys(meta).forEach((key) => formData.append(key, meta[key]));
+
+                await axios.post("http://localhost:8080/api/nas/upload-multi", formData, {
+                    headers: {"Content-Type": "multipart/form-data"},
+                    onUploadProgress: (event) => {
+                        const fileProgress = Math.round((event.loaded / event.total) * 100);
+                        const overallProgress = Math.round(((uploadedCount + fileProgress / 100) / files.length) * 100);
+                        setProgress(overallProgress);
+                    },
+                });
+
+                uploadedCount++;
+            }
+
+            setProgress(100);
             setMessage("✅ 업로드 성공");
         } catch (err) {
             console.error(err);
@@ -151,7 +169,7 @@ function NasUpload({ onClose }) {
     const nextSlide = () => setCurrentIndex((prev) => Math.min(prev + 1, files.length - 1));
 
     const handleDragEnd = (event) => {
-        const { active, over } = event;
+        const {active, over} = event;
         if (!over) return;
         if (active.id !== over.id) {
             const oldIndex = Number(active.id);
@@ -196,17 +214,17 @@ function NasUpload({ onClose }) {
                                 }}
                             >
                                 {previews.map((url, i) => (
-                                    <img key={i} src={url} alt="preview" className="nas-preview-image" />
+                                    <img key={i} src={url} alt="preview" className="nas-preview-image"/>
                                 ))}
                             </div>
                             {currentIndex > 0 && (
                                 <button onClick={prevSlide} className="nas-arrow left">
-                                    <LeftOutlined />
+                                    <LeftOutlined/>
                                 </button>
                             )}
                             {currentIndex < files.length - 1 && (
                                 <button onClick={nextSlide} className="nas-arrow right">
-                                    <RightOutlined />
+                                    <RightOutlined/>
                                 </button>
                             )}
 
@@ -236,14 +254,14 @@ function NasUpload({ onClose }) {
                                 </SortableContext>
                                 <DragOverlay>
                                     {activeId !== null && (
-                                        <img src={previews[Number(activeId)]} alt="drag" className="thumbnail-image" />
+                                        <img src={previews[Number(activeId)]} alt="drag" className="thumbnail-image"/>
                                     )}
                                 </DragOverlay>
                             </DndContext>
                         </>
                     ) : (
                         <label className="nas-file-label">
-                            <input type="file" multiple hidden onChange={handleFileChange} />
+                            <input type="file" multiple hidden onChange={handleFileChange}/>
                             📂 여기에 드롭하거나 클릭해서 사진 선택
                         </label>
                     )}
@@ -253,7 +271,7 @@ function NasUpload({ onClose }) {
                     <h2>새 게시물 만들기</h2>
                     <select
                         value={meta.albumId}
-                        onChange={(e) => setMeta({ ...meta, albumId: e.target.value })}
+                        onChange={(e) => setMeta({...meta, albumId: e.target.value})}
                     >
                         {albums.map((album) => (
                             <option key={album.id} value={String(album.id)}>
@@ -265,34 +283,41 @@ function NasUpload({ onClose }) {
                         type="text"
                         placeholder="제목"
                         value={meta.title}
-                        onChange={(e) => setMeta({ ...meta, title: e.target.value })}
+                        onChange={(e) => setMeta({...meta, title: e.target.value})}
                     />
                     <textarea
                         placeholder="설명"
                         value={meta.description}
-                        onChange={(e) => setMeta({ ...meta, description: e.target.value })}
+                        onChange={(e) => setMeta({...meta, description: e.target.value})}
                     />
                     <input
                         type="text"
                         placeholder="태그 (쉼표 구분)"
                         value={meta.tags}
-                        onChange={(e) => setMeta({ ...meta, tags: e.target.value })}
+                        onChange={(e) => setMeta({...meta, tags: e.target.value})}
                     />
                     <input
                         type="datetime-local"
                         placeholder="촬영일"
                         value={meta.takenDate}
-                        onChange={(e) => setMeta({ ...meta, takenDate: e.target.value })}
+                        onChange={(e) => setMeta({...meta, takenDate: e.target.value})}
                     />
                     <input
                         type="text"
                         placeholder="위치"
                         value={meta.location}
-                        onChange={(e) => setMeta({ ...meta, location: e.target.value })}
+                        onChange={(e) => setMeta({...meta, location: e.target.value})}
                     />
                     <button onClick={handleUpload} className="nas-upload-btn">
                         업로드
                     </button>
+                    {files.length > 0 && (
+                        <div className="nas-progress">
+                            <div className="nas-progress-bar" style={{width: `${progress}%`}}/>
+                            <span>{progress}%</span>
+                        </div>
+                    )}
+
                     <p className="nas-message">{message}</p>
                 </div>
 
@@ -304,8 +329,8 @@ function NasUpload({ onClose }) {
     );
 }
 
-function SortableThumbnail({ id, preview, isActive, onClick, onDelete }) {
-    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+function SortableThumbnail({id, preview, isActive, onClick, onDelete}) {
+    const {attributes, listeners, setNodeRef, transform, transition} = useSortable({id});
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
@@ -313,13 +338,13 @@ function SortableThumbnail({ id, preview, isActive, onClick, onDelete }) {
     };
     return (
         <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="thumbnail-wrapper">
-            <img src={preview} alt="thumb" className="thumbnail-image" onClick={onClick} />
+            <img src={preview} alt="thumb" className="thumbnail-image" onClick={onClick}/>
             <button
                 className="thumbnail-delete"
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={onDelete}
             >
-                <CloseOutlined />
+                <CloseOutlined/>
             </button>
         </div>
     );

@@ -1,6 +1,6 @@
 /* Masonry Grid */
 .masonry {
-    column-count: 3;
+    column-count: 6;
     column-gap: 10px;
 }
 .masonry-item {
