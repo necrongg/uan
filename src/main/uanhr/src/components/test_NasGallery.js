@@ -10,7 +10,7 @@ function Test_NasGallery() {
     useEffect(() => {
         const fetchPhotos = async () => {
             try {
-                const res = await axios.get("http://localhost:8080/api/nas/list");
+                const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/nas/list`);
                 setPhotos(res.data);
             } catch (err) {
                 console.error(err);
