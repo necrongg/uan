@@ -129,6 +129,8 @@ function NasUpload({onClose}) {
     };
 
     // 상태 추가
+    // NasUpload 컴포넌트 내부에서
+
     const handleUpload = async () => {
         if (files.length === 0) return setMessage("❌ 파일을 선택해주세요.");
         if (!meta.albumId) return setMessage("❌ 앨범을 선택해주세요.");
@@ -139,7 +141,6 @@ function NasUpload({onClose}) {
 
             let uploadedCount = 0;
 
-            // 순차 업로드
             for (let i = 0; i < files.length; i++) {
                 const formData = new FormData();
                 formData.append("files", files[i]);
@@ -149,7 +150,9 @@ function NasUpload({onClose}) {
                     headers: {"Content-Type": "multipart/form-data"},
                     onUploadProgress: (event) => {
                         const fileProgress = Math.round((event.loaded / event.total) * 100);
-                        const overallProgress = Math.round(((uploadedCount + fileProgress / 100) / files.length) * 100);
+                        const overallProgress = Math.round(
+                            ((uploadedCount + fileProgress / 100) / files.length) * 100
+                        );
                         setProgress(overallProgress);
                     },
                 });
@@ -159,11 +162,17 @@ function NasUpload({onClose}) {
 
             setProgress(100);
             setMessage("✅ 업로드 성공");
+
+            // 업로드 완료 후 모달 자동 닫기 (0.5초 딜레이)
+            setTimeout(() => {
+                onClose();
+            }, 500);
         } catch (err) {
             console.error(err);
             setMessage("❌ 업로드 실패: " + (err.response?.data || err.message));
         }
     };
+
 
     const prevSlide = () => setCurrentIndex((prev) => Math.max(prev - 1, 0));
     const nextSlide = () => setCurrentIndex((prev) => Math.min(prev + 1, files.length - 1));
@@ -321,9 +330,15 @@ function NasUpload({onClose}) {
                     <p className="nas-message">{message}</p>
                 </div>
 
-                <button onClick={onClose} className="nas-close-btn">
+                <button
+                    onClick={onClose}
+                    className="nas-close-btn"
+                    disabled={message.startsWith("⏳")} // 업로드 중이면 비활성화
+                    style={{ cursor: message.startsWith("⏳") ? "not-allowed" : "pointer" }}
+                >
                     ✖
                 </button>
+
             </div>
         </div>
     );
