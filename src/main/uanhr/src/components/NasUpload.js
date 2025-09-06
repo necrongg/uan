@@ -318,12 +318,10 @@ function NasUpload({onClose}) {
                         onChange={(e) => setMeta({...meta, location: e.target.value})}
                     />
                     <p className="nas-message">{message}</p>
-                    {files.length > 0 && (
                         <div className="nas-progress">
                             <div className="nas-progress-bar" style={{width: `${progress}%`}}/>
                             <span>{progress}%</span>
                         </div>
-                    )}
                     <button onClick={handleUpload} className="nas-upload-btn">
                         업로드
                     </button>

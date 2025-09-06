@@ -1,19 +1,18 @@
 import React, { useState } from "react";
 import NasUpload from "./components/NasUpload";
 import NasGallery from "./components/NasGallery";
-import { Button, message } from "antd";
+import "./App.css"
+import { Button } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 
 function App() {
     const [isUploadOpen, setIsUploadOpen] = useState(false);
-    const [messageApi, contextHolder] = message.useMessage();
 
     return (
         <div>
-            {contextHolder} {/* 메시지 표시 영역 */}
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 20px" }}>
+            <div className="title-flex">
                 <h2>갤러리</h2>
-                <div>
+                <div className="btn-flex">
                     <Button icon={<UploadOutlined />} onClick={() => setIsUploadOpen(true)}>
                         사진 올리기
                     </Button>
@@ -24,7 +23,6 @@ function App() {
             {isUploadOpen && (
                 <NasUpload
                     onClose={() => setIsUploadOpen(false)}
-                    messageApi={messageApi} // 상위에서 메시지 전달
                 />
             )}
 

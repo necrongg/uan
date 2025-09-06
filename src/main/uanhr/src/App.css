@@ -1,0 +1,12 @@
+.title-flex {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 20px;
+}
+
+.btn-flex{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 20px;
+}
