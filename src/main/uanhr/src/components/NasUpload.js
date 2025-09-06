@@ -1,12 +1,26 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { LeftOutlined, RightOutlined, CloseOutlined } from "@ant-design/icons";
+import {
+    DndContext,
+    closestCenter,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragOverlay,
+} from "@dnd-kit/core";
+import {
+    arrayMove,
+    SortableContext,
+    useSortable,
+    horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import "./NasUpload.css";
-import { LeftOutlined, RightOutlined } from "@ant-design/icons";
 
 function NasUpload({ onClose }) {
     const [files, setFiles] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [isDragging, setIsDragging] = useState(false);
     const [meta, setMeta] = useState({
         albumId: "",
         title: "",
@@ -16,6 +30,17 @@ function NasUpload({ onClose }) {
     });
     const [message, setMessage] = useState("");
     const [albums, setAlbums] = useState([]);
+    const [activeId, setActiveId] = useState(null);
+
+    // 드래그 센서 (1초 이상 눌러야 드래그 시작)
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                delay: 200, // 0.2초
+                tolerance: 5, // 드래그 이동 허용 오차
+            },
+        })
+    );
 
     // 앨범 불러오기
     useEffect(() => {
@@ -38,33 +63,22 @@ function NasUpload({ onClose }) {
         fetchAlbums();
     }, []);
 
+    // 파일 선택
     const handleFileChange = (e) => {
         setFiles(Array.from(e.target.files));
         setCurrentIndex(0);
     };
 
-    const handleDrop = (e) => {
-        e.preventDefault();
-        setIsDragging(false);
-        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            setFiles(Array.from(e.dataTransfer.files));
-            setCurrentIndex(0);
-        }
+    // 파일 삭제
+    const handleDelete = (index) => {
+        const newFiles = [...files];
+        newFiles.splice(index, 1);
+        setFiles(newFiles);
+        if (currentIndex >= newFiles.length) setCurrentIndex(newFiles.length - 1);
+        else if (index < currentIndex) setCurrentIndex((prev) => prev - 1);
     };
 
-    const handleDragOver = (e) => {
-        e.preventDefault();
-        setIsDragging(true);
-    };
-
-    const handleDragLeave = (e) => {
-        e.preventDefault();
-        setIsDragging(false);
-    };
-
-    const handleMetaChange = (e) =>
-        setMeta({ ...meta, [e.target.name]: e.target.value });
-
+    // 업로드
     const handleUpload = async () => {
         if (files.length === 0) {
             setMessage("❌ 파일을 선택해주세요.");
@@ -91,28 +105,35 @@ function NasUpload({ onClose }) {
         }
     };
 
-    const prevSlide = () =>
-        setCurrentIndex((prev) => (prev > 0 ? prev - 1 : prev));
+    const prevSlide = () => setCurrentIndex((prev) => (prev > 0 ? prev - 1 : prev));
     const nextSlide = () =>
         setCurrentIndex((prev) => (prev < files.length - 1 ? prev + 1 : prev));
+
+    const handleDragEnd = (event) => {
+        const { active, over } = event;
+        if (active.id !== over.id) {
+            const oldIndex = Number(active.id);
+            const newIndex = Number(over.id);
+            setFiles(arrayMove(files, oldIndex, newIndex));
+            if (currentIndex === oldIndex) setCurrentIndex(newIndex);
+            else if (oldIndex < currentIndex && newIndex >= currentIndex) setCurrentIndex((prev) => prev - 1);
+            else if (oldIndex > currentIndex && newIndex <= currentIndex) setCurrentIndex((prev) => prev + 1);
+        }
+        setActiveId(null);
+    };
 
     return (
         <div className="nas-modal-overlay">
             <div className="nas-modal">
-                {/* 왼쪽 슬라이드 영역 */}
-                <div
-                    className={`nas-upload-area ${isDragging ? "dragging" : ""}`}
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                >
+                {/* 왼쪽 슬라이드 */}
+                <div className="nas-upload-area">
                     {files.length > 0 ? (
                         <>
                             <div
                                 className="nas-slide-wrapper"
                                 style={{
-                                    transform: `translateX(-${currentIndex * 100}%)`, // 한 장씩 정확히 이동
-                                    width: `${files.length * 100}%`,                // wrapper 폭 = 이미지 수 * 100%
+                                    transform: `translateX(-${currentIndex * 100}%)`,
+                                    width: `${files.length * 100}%`,
                                 }}
                             >
                                 {files.map((file, i) => (
@@ -125,7 +146,6 @@ function NasUpload({ onClose }) {
                                 ))}
                             </div>
 
-
                             {currentIndex > 0 && (
                                 <button onClick={prevSlide} className="nas-arrow left">
                                     <LeftOutlined />
@@ -137,14 +157,41 @@ function NasUpload({ onClose }) {
                                 </button>
                             )}
 
-                            <div className="nas-dots">
-                                {files.map((_, i) => (
-                                    <span
-                                        key={i}
-                                        className={`dot ${i === currentIndex ? "active" : ""}`}
-                                    />
-                                ))}
-                            </div>
+                            {/* 썸네일 하단 */}
+                            <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
+                                onDragStart={(e) => setActiveId(e.active.id)}
+                                onDragEnd={handleDragEnd}
+                            >
+                                <SortableContext
+                                    items={files.map((_, i) => String(i))}
+                                    strategy={horizontalListSortingStrategy}
+                                >
+                                    <div className="nas-thumbnails">
+                                        {files.map((file, i) => (
+                                            <SortableThumbnail
+                                                key={i}
+                                                id={String(i)}
+                                                file={file}
+                                                isActive={i === currentIndex}
+                                                onClick={() => setCurrentIndex(i)}
+                                                onDelete={() => handleDelete(i)}
+                                            />
+                                        ))}
+                                    </div>
+                                </SortableContext>
+
+                                <DragOverlay>
+                                    {activeId !== null && (
+                                        <img
+                                            src={URL.createObjectURL(files[Number(activeId)])}
+                                            alt="drag"
+                                            className="thumbnail-image"
+                                        />
+                                    )}
+                                </DragOverlay>
+                            </DndContext>
                         </>
                     ) : (
                         <label className="nas-file-label">
@@ -154,46 +201,47 @@ function NasUpload({ onClose }) {
                     )}
                 </div>
 
-                {/* 오른쪽 폼 영역 */}
+                {/* 오른쪽 폼 */}
                 <div className="nas-form">
                     <h2>새 게시물 만들기</h2>
-
-                    <select name="albumId" value={meta.albumId} onChange={handleMetaChange}>
+                    <select
+                        name="albumId"
+                        value={meta.albumId}
+                        onChange={(e) => setMeta({ ...meta, albumId: e.target.value })}
+                    >
                         {albums.map((album) => (
                             <option key={album.id} value={String(album.id)}>
                                 {album.name}
                             </option>
                         ))}
                     </select>
-
                     <input
                         type="text"
                         name="title"
                         placeholder="제목"
                         value={meta.title}
-                        onChange={handleMetaChange}
+                        onChange={(e) => setMeta({ ...meta, title: e.target.value })}
                     />
                     <textarea
                         name="description"
                         placeholder="설명"
                         value={meta.description}
-                        onChange={handleMetaChange}
+                        onChange={(e) => setMeta({ ...meta, description: e.target.value })}
                     />
                     <input
                         type="text"
                         name="tags"
                         placeholder="태그 (쉼표 구분)"
                         value={meta.tags}
-                        onChange={handleMetaChange}
+                        onChange={(e) => setMeta({ ...meta, tags: e.target.value })}
                     />
                     <input
                         type="text"
                         name="location"
                         placeholder="위치"
                         value={meta.location}
-                        onChange={handleMetaChange}
+                        onChange={(e) => setMeta({ ...meta, location: e.target.value })}
                     />
-
                     <button onClick={handleUpload} className="nas-upload-btn">
                         업로드
                     </button>
@@ -204,6 +252,29 @@ function NasUpload({ onClose }) {
                     ✖
                 </button>
             </div>
+        </div>
+    );
+}
+
+// Sortable 썸네일
+function SortableThumbnail({ id, file, isActive, onClick, onDelete }) {
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        border: isActive ? "2px solid #3b82f6" : "2px solid transparent",
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="thumbnail-wrapper">
+            <img src={URL.createObjectURL(file)} alt="thumb" className="thumbnail-image" onClick={onClick} />
+            <button
+                className="thumbnail-delete"
+                onPointerDown={(e) => e.stopPropagation()} // 드래그 이벤트 차단
+                onClick={onDelete}
+            >
+                <CloseOutlined />
+            </button>
         </div>
     );
 }

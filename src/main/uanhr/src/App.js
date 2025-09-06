@@ -2,6 +2,11 @@ import React, { useState } from "react";
 import NasUpload from "./components/NasUpload";
 import NasGallery from "./components/NasGallery";
 
+import { UploadOutlined } from '@ant-design/icons';
+import { Button, Upload } from 'antd';
+
+
+
 function App() {
     const [isUploadOpen, setIsUploadOpen] = useState(false);
 
@@ -9,9 +14,11 @@ function App() {
         <div>
             <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 20px" }}>
                 <h2>유안앨범</h2>
-                <button onClick={() => setIsUploadOpen(true)} style={{ padding: "6px 12px", cursor: "pointer" }}>
-                    사진 올리기
-                </button>
+                <div>
+                    <Upload disabled>
+                        <Button icon={<UploadOutlined />} onClick={() => setIsUploadOpen(true)}>사진 올리기</Button>
+                    </Upload>
+                </div>
             </div>
 
             {/* 업로드 모달 */}
