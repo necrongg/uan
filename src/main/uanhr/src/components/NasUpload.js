@@ -47,7 +47,7 @@ function NasUpload({ onClose }) {
     useEffect(() => {
         const fetchAlbums = async () => {
             try {
-                const res = await axios.get("http://localhost:8080/api/albums");
+                const res = await axios.get("https://web.inku.i234.me/api/albums");
                 const albumList = Array.isArray(res.data) ? res.data : [];
                 setAlbums(albumList);
                 if (albumList.length > 0)
@@ -137,7 +137,7 @@ function NasUpload({ onClose }) {
 
         try {
             setMessage("⏳ 업로드 중...");
-            await axios.post("http://localhost:8080/api/nas/upload-multi", formData, {
+            await axios.post("https://web.inku.i234.me/api/nas/upload-multi", formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
             setMessage("✅ 업로드 성공");

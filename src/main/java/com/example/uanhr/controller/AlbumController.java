@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/albums")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:3000")
 public class AlbumController {
 
     private final AlbumService albumService;
